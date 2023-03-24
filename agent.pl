@@ -12,6 +12,7 @@
 :- dynamic tNew/1.
 :- dynamic receivedPref/1.
 :- dynamic receivedBroadcast/1.
+:- dynamic receivedDecidePref/1.
 
 :- dynamic startSession/3.
 :- dynamic roundInitialiser/0.
@@ -61,7 +62,8 @@ startSession(Preference, PID, N) :-
     assertz(tNew(0)),
     assertz(xNew(Preference)),
     assertz(receivedPref(0)),
-    assertz(receivedBroadcast(0)).
+    assertz(receivedBroadcast(0)),
+    assertz(receivedDecidePref(0)).
 
 % ---------------------------------------------------------------------------------------------------
 
@@ -85,6 +87,19 @@ roundInitialiser :-
     assertz(countTotalAcks(0)),
     retract(countAck(_)),
     assertz(countAck(0)),
+    /*retract(rNew(_)),
+    assertz(rNew(0)),
+    retract(tNew(_)),
+    assertz(tNew(0)),
+    retract(xNew(_)),
+    assertz(xNew(Preference)),
+    */
+    retract(receivedPref(_)),
+    assertz(receivedPref(0)),
+    retract(receivedBroadcast(_)),
+    assertz(receivedBroadcast(0)),
+    retract(receivedDecidePref(_)),
+    assertz(receivedDecidePref(0)),
 
     % create_mutex(mutexForCount),
 
@@ -131,7 +146,26 @@ roundWork :-
     writeln("coordinator crash")
     );
     true
-    ).
+    ),
+
+    (P =\= C2 -> 
+    % intitial value of Timeout is False,
+    sleep(20),
+    receivedDecidePref(Dp),
+    preference(Pfinal),
+    (Dp =:= 1 ->
+    % it has received decide preference
+    writeln("decide preference received"),
+    broadcastDecidePref(R,Pfinal,N,P),
+    writeln("Final broadcast of round done");
+    % it has not received decide preference
+    writeln("no decide preference received")
+    );
+    true
+    ),
+    writeln("Preference is "),
+    writeln(Pfinal),
+    writeln("Round done").
 
     /*
 
@@ -280,7 +314,7 @@ agentR_handler(guid,(IP,Port),main):-
 :- dynamic loop/5.
 loop(I,N,R,X,P):-
     I > N;
-    Tt is I+6000,
+    Tt is I+6000,   
     (Tt =:= P ->
     true;
     create_mobile_agent(agentR,(localhost,P),agentR_handler,[1]),
@@ -319,8 +353,6 @@ agentA_handler(guid,(IP,Port),main):-
     W is Tb+1,
     retract(countAck(_)),
     assert(countAck(W)),
-    payloadAck(guid),
-    remove_payload(agentA,[(payloadAck,1)]),
     writeln("total acks"),
     writeln(V),
     writeln("positive acks"),
@@ -340,10 +372,15 @@ agentA_handler(guid,(IP,Port),main):-
 % description: makes a mobile agent which sends positive ack to coordinator.
 sendAck(P,C) :- 
     % make a dynamic agent with payload (+1) and send to C and its handler will keep countTotalAcks and countAck and increment it.
-    create_mobile_agent(agentA,(localhost,P),agentA_handler,[1]),
+    round(R),
+    atom_concat("round", R, Temp1),
+    atom_concat(Temp1, "port", Temp2),
+    atom_concat(Temp2, P, FinalName),
+    atom_concat(FinalName, "Ack", FinalName2),
+    create_mobile_agent(FinalName2,(localhost,P),agentA_handler,[1]),
     assert(payloadAck(guid)),
-    add_payload(agentA,[(payloadAck,1)]),
-    move_agent(agentA,(localhost,C)).
+    add_payload(FinalName2,[(payloadAck,1)]),
+    move_agent(FinalName2,(localhost,C)).
 
 % -----------------------------------------------------------------------------------------------------------------
 
@@ -356,17 +393,20 @@ agentN_handler(guid,(IP,Port),main):-
     V is Ta+1,
     retract(countTotalAcks(_)),
     assert(countTotalAcks(V)),
-    payloadAck(guid),
-    remove_payload(agentA,[(payloadAck,1)]),
     writeln("total acks"),
     writeln(V).
 
 sendNAck(P,C) :-
     % make a dynamic agent with payload (-1) and send to C and its handler will keep countTotal and increment it.
-    create_mobile_agent(agentN,(localhost,P),agentN_handler,[1]),
+    round(R),
+    atom_concat("round", R, Temp1),
+    atom_concat(Temp1, "port", Temp2),
+    atom_concat(Temp2, P, FinalName),
+    atom_concat(FinalName, "Nack", FinalName2),
+    create_mobile_agent(FinalName2,(localhost,P),agentN_handler,[1]),
     assert(payloadNAck(guid)),
-    add_payload(agentN,[(payloadNAck,1)]),
-    move_agent(agentN,(localhost,C)).
+    add_payload(FinalName2,[(payloadNAck,1)]),
+    move_agent(FinalName2,(localhost,C)).
 
 % ------------------------------------------------------------------------------------------------------------------
 
@@ -420,8 +460,15 @@ broadcastPref(R,Rp,N,P) :-
 % output: 
 % description: handler of the payload which is the new preference which is broadcast.
 agentPR_handler(guid,(IP,Port),main):-
-    writeln("Boadcast preference has reached process "),
-    writeln(Port).
+    writeln("Boadcast decide preference has reached process "),
+    writeln(Port),
+    payloadNewPref(guid,X),
+    retract(receivedDecidePref(_)),
+    assertz(receivedDecidePref(1)),
+    retract(preference(_)),
+    assertz(preference(X)),
+    writeln("new preference is "),
+    writeln(X).
 
 % input : 
 % output : 
@@ -435,7 +482,7 @@ loopNew(I,N,R,X,P):-
     assert(payloadNewPref(guid,X)),
     add_payload(agentPR,[(payloadNewPref,2)]),
     move_agent(agentPR,(localhost,Tt)),
-    writeln("broadcasted new preference to process "),
+    writeln("broadcasted new decide preference to process "),
     writeln(Tt)
     ),
     Ii is I+1,
@@ -448,6 +495,6 @@ broadcastDecidePref(R,X,N,P) :-
     writeln("beginning broadcast of new preference"),
     % for i in all platforms: 
         % make a dynamic agent with payload (x) and send it to platform i.
-    I is 0,
+    I is 1,
     loopNew(I,N,R,X,P),
-    writeln("broadcast of new preference done").
+    writeln("broadcast of new decide preference done").
