@@ -1,23 +1,24 @@
-setup1(N) :-
+setup1(N, Pref, P) :-
 % Normal setup process
+    Temp is 6000 + P,
     consult('Desktop/sem6/SSL/Assignment4/platform-ubuntu.pl'),
-    start_tartarus(localhost,6001,1),
+    start_tartarus(localhost,Temp,1),
     consult('Desktop/sem6/SSL/MidSem/agent.pl'),
-    startSession(200, 6001, N),
-    roundInitialiser.
+    startSession(Pref, Temp, N).
 
 setup11 :-
+    roundInitialiser,
     roundWork.
 
-setup2(N) :-
+/*setup2(N) :-
 % Normal setup process
     consult('Desktop/sem6/SSL/Assignment4/platform-ubuntu.pl'),
     start_tartarus(localhost,6002,1),
     consult('Desktop/sem6/SSL/MidSem/agent.pl'),
     startSession(250, 6002, N),
-    roundInitialiser.
 
 setup21 :-
+    roundInitialiser,
     roundWork.
 
 setup3(N) :-
@@ -29,6 +30,7 @@ setup3(N) :-
     roundInitialiser.
 
 setup31 :- 
+    roundInitialiser,
     roundWork.
 
 setup4(N) :-
@@ -40,4 +42,6 @@ setup4(N) :-
     roundInitialiser.
 
 setup41 :- 
+    roundInitialiser,
     roundWork.
+*/

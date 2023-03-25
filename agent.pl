@@ -12,6 +12,7 @@
 :- dynamic tNew/1.
 :- dynamic receivedPref/1.
 :- dynamic receivedBroadcast/1.
+:- dynamic receivedNextBroadcast/1.
 :- dynamic receivedDecidePref/1.
 
 :- dynamic startSession/3.
@@ -63,7 +64,8 @@ startSession(Preference, PID, N) :-
     assertz(xNew(Preference)),
     assertz(receivedPref(0)),
     assertz(receivedBroadcast(0)),
-    assertz(receivedDecidePref(0)).
+    assertz(receivedDecidePref(0)),
+    assertz(receivedNextBroadcast(0)).
 
 % ---------------------------------------------------------------------------------------------------
 
@@ -87,19 +89,32 @@ roundInitialiser :-
     assertz(countTotalAcks(0)),
     retract(countAck(_)),
     assertz(countAck(0)),
+
     /*retract(rNew(_)),
     assertz(rNew(0)),
     retract(tNew(_)),
     assertz(tNew(0)),
-    retract(xNew(_)),
-    assertz(xNew(Preference)),
     */
+    preference(Temporary),
+    retract(xNew(_)),
+    assertz(xNew(Temporary)),
+
     retract(receivedPref(_)),
     assertz(receivedPref(0)),
     retract(receivedBroadcast(_)),
     assertz(receivedBroadcast(0)),
     retract(receivedDecidePref(_)),
     assertz(receivedDecidePref(0)),
+
+    receivedNextBroadcast(Nb),
+    (Nb =:= 1 ->
+    retract(receivedNextBroadcast(_)),
+    assertz(receivedNextBroadcast(0)),
+    retract(receivedBroadcast(_)),
+    assertz(receivedBroadcast(1));
+    true
+    ),
+
 
     % create_mutex(mutexForCount),
 
@@ -227,21 +242,17 @@ handlerFunction(X1,Y,Z,PO):-
     xNew(X11),
     writeln("changed preference is "),
     writeln(X11),
-    writeln("almost there"),
     coordinator(C3),
     pID(P3),
-    writeln("current V is "),
-    writeln(V),
-    agent_list,
     n(N),
-    writeln("V is "),
-    writeln(V),
-    writeln("N is "),
-    writeln(N),
-    K is N/2,
+    round(R),
+    K1 is N - R +1,
+    K is K1/2,
     % now if V is more than N/2 call another function to continue execution, or dont do anything.
     (V > K ->
     xNew(X11),
+    retract(preference(_)),
+    assertz(preference(X11)),
     writeln("New preference is "),
     writeln(X11),
     retract(countMessage(_)),
@@ -277,21 +288,6 @@ sendMessage(C,R,X,T,P) :-
     ).
 
 
-% ----------------------------------------------------------------------------------------------------
-
-% waits until coordinator has received n/2 messages
-waitForCount(Count,N) :- 
-    loop(Count,N).
-
-% loop till count exceeds n/2
-loop(Count,N):-
-    (Count > N/2 ->
-    writeln("done"),
-    true;
-    writeln(Count),
-    loop(Count1,N)
-    ).
-
 % -----------------------------------------------------------------------------------------------------
 
 
@@ -304,8 +300,20 @@ agentR_handler(guid,(IP,Port),main):-
     payloadFromC(guid,Rincoming,Xincoming),
     writeln("incoming preference is"),
     writeln(Xincoming),
+    retract(preference(_)),
+    assertz(preference(Xincoming)),
+    round(R),
+    write("Rincoming: "),writeln(Rincoming),
+    write("R: "), writeln(R),
+    (Rincoming =:= R ->
     retract(receivedBroadcast(_)),
-    assertz(receivedBroadcast(1)).
+    assertz(receivedBroadcast(1)),
+    writeln("same round");
+    retract(receivedNextBroadcast(_)),
+    assertz(receivedNextBroadcast(1)),
+    writeln("next round")
+    ),
+    writeln("why").
     
 
 % input : 
@@ -334,7 +342,8 @@ broadcastMessage(R,X,N,P) :-
     writeln("beginning broadcast"),
     % for i in all platforms: 
         % make a dynamic agent with payload (r,x) and send it to platform i.
-    I is 1,
+    Cur is P - 6000,
+    I is Cur,
     loop(I,N,R,X,P),
     writeln("broadcast done").
 
@@ -361,7 +370,8 @@ agentA_handler(guid,(IP,Port),main):-
     round(R),
     pID(P),
     preference(X),
-    ( W > N/2 ->
+    T1 is N - R + 1,
+    ( W > T1/2 ->
     % call decide pref broadcast function
     broadcastDecidePref(R,X,N,P);
     true
@@ -495,6 +505,7 @@ broadcastDecidePref(R,X,N,P) :-
     writeln("beginning broadcast of new preference"),
     % for i in all platforms: 
         % make a dynamic agent with payload (x) and send it to platform i.
-    I is 1,
+    Cur is P - 6000,
+    I is Cur,
     loopNew(I,N,R,X,P),
     writeln("broadcast of new decide preference done").
