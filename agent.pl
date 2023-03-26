@@ -79,7 +79,7 @@ roundInitialiser :-
     Y is X+1,
     retract(round(_)),
     assertz(round(Y)),
-    C1 is Y mod P,
+    C1 is Y,
     C is C1+6000,
     retract(coordinator(Co)),
     assertz(coordinator(C)),
@@ -155,7 +155,7 @@ roundWork :-
     (B =:= 1 ->
     % it has received broadcast
     sendAck(P,C2),
-    writeln("broadcasr refceived");
+    writeln("broadcast received");
     % coordinator has crashed
     sendNAck(P,C2),
     writeln("coordinator crash")
@@ -178,9 +178,12 @@ roundWork :-
     );
     true
     ),
-    writeln("Preference is "),
-    writeln(Pfinal),
-    writeln("Round done").
+    writeln("Round done"),
+
+    ( P =\= C2 ->
+    setup11;
+    true
+    ).
 
     /*
 
@@ -325,10 +328,14 @@ loop(I,N,R,X,P):-
     Tt is I+6000,   
     (Tt =:= P ->
     true;
-    create_mobile_agent(agentR,(localhost,P),agentR_handler,[1]),
+    atom_concat("round", R, Temp1),
+    atom_concat(Temp1, "port", Temp2),
+    atom_concat(Temp2, P, FinalName),
+    atom_concat(FinalName, "Broadcast", FinalName2),
+    create_mobile_agent(FinalName2,(localhost,P),agentR_handler,[1]),
     assert(payloadFromC(guid,R,X)),
-    add_payload(agentR,[(payloadFromC,3)]),
-    move_agent(agentR,(localhost,Tt)),
+    add_payload(FinalName2,[(payloadFromC,3)]),
+    move_agent(FinalName2,(localhost,Tt)),
     writeln("broadcasted to process "),
     writeln(Tt)
     ),
@@ -488,10 +495,14 @@ loopNew(I,N,R,X,P):-
     Tt is I+6000,
     (Tt =:= P ->
     true;
-    create_mobile_agent(agentPR,(localhost,P),agentPR_handler,[1]),
+    atom_concat("round", R, Temp1),
+    atom_concat(Temp1, "port", Temp2),
+    atom_concat(Temp2, P, FinalName),
+    atom_concat(FinalName, "DecideBroadcast", FinalName2),
+    create_mobile_agent(FinalName2,(localhost,P),agentPR_handler,[1]),
     assert(payloadNewPref(guid,X)),
-    add_payload(agentPR,[(payloadNewPref,2)]),
-    move_agent(agentPR,(localhost,Tt)),
+    add_payload(FinalName2,[(payloadNewPref,2)]),
+    move_agent(FinalName2,(localhost,Tt)),
     writeln("broadcasted new decide preference to process "),
     writeln(Tt)
     ),
