@@ -141,10 +141,10 @@ roundWork :-
     tNew(Tnew),
     xNew(Xnew),
     receivedPref(Rp),
-    writeln("platform number "),
+    /*writeln("platform number "),
     writeln(P),
     writeln("coordinator"),
-    writeln(C2),
+    writeln(C2),*/
     sendMessage(C2,R,X,T,P),
 
     (P =\= C2 -> 
@@ -199,17 +199,17 @@ agentM_handler(guid,(IP,Port),main):-
 handlerFunction(X1,Y,Z,PO):-
     countMessage(M),
     V is M+1,
-    writeln("current V is "),
-    writeln(V),
+    % writeln("current V is "),
+    % writeln(V),
     retract(countMessage(_)),
     assert(countMessage(V)),
-    writeln(X1),
+    /*writeln(X1),
     writeln(Y),
-    writeln(Z),
+    writeln(Z),*/
     tNew(Tnew),
     preference(Xe),
-    writeln("current preference is "),
-    writeln(Xe),
+    % writeln("current preference is "),
+    % writeln(Xe),
     (Z > Tnew -> 
     retract(rNew(_)),
     assertz(rNew(X1)),
@@ -222,8 +222,8 @@ handlerFunction(X1,Y,Z,PO):-
     true
     ),
     xNew(X11),
-    writeln("changed preference is "),
-    writeln(X11),
+    % writeln("changed preference is "),
+    % writeln(X11),
     coordinator(C3),
     pID(P3),
     n(N),
@@ -235,11 +235,11 @@ handlerFunction(X1,Y,Z,PO):-
     xNew(X11),
     retract(preference(_)),
     assertz(preference(X11)),
-    writeln("New preference is "),
-    writeln(X11),
+    % writeln("New preference is "),
+    % writeln(X11),
     retract(countMessage(_)),
     assertz(countMessage(-10)),
-    writeln("calling broadcast"),
+    % writeln("calling broadcast"),
     (R =:= 1 ->
     true;
     broadcastMessage(R,X11,N,P3)
@@ -284,17 +284,17 @@ agentR_handler(guid,(IP,Port),main):-
     retract(preference(_)),
     assertz(preference(Xincoming)),
     round(R),
-    write("Rincoming: "),writeln(Rincoming),
-    write("R: "), writeln(R),
+    % write("Rincoming: "),writeln(Rincoming),
+    % write("R: "), writeln(R),
     (Rincoming =:= R ->
     retract(receivedBroadcast(_)),
     assertz(receivedBroadcast(1)),
-    writeln("same round");
+    % writeln("same round");
     retract(receivedNextBroadcast(_)),
     assertz(receivedNextBroadcast(1)),
-    writeln("next round")
+    % writeln("next round")
     ),
-    writeln("why").
+    % writeln("why").
     
 
 % input : 
