@@ -1,0 +1,38 @@
+Name : Arya Avinash Phadke
+Roll Number : 200101020
+
+CHANDRA - TOUEG ALGORITHM
+
+The Chandra–Toueg consensus algorithm, published by Tushar Deepak Chandra and Sam Toueg in 1996, is an algorithm for solving consensus in a network of unreliable processes equipped with an eventually strong failure detector. The failure detector is an abstract version of timeouts; it signals to each process when other processes may have crashed. 
+
+The algorithm :
+- All processes send (r, preference, timestamp) to the coordinator.
+- The coordinator waits to receive messages from at least half of the processes (including itself).
+- It then chooses as its preference a value with the most recent timestamp among those sent.
+- The coordinator sends (r, preference) to all processes.
+- Each process waits (1) to receive (r, preference) from the coordinator, or (2) for its failure detector to identify the coordinator as crashed.
+- In the first case, it sets its own preference to the coordinator's preference and responds with ack(r).
+- In the second case, it sends nack(r) to the coordinator.
+- The coordinator waits to receive ack(r) or nack(r) from a majority of processes.
+- If it receives ack(r) from a majority, it sends decide(preference) to all processes.
+- Any process that receives decide(preference) for the first time relays decide(preference) to all processes, then decides preference and terminates.
+
+
+This algorithm has been implemented in prolog on Tartarus.
+There are two main files, flow.pl and run.pl.
+Flow.pl has the main predicates which calls predicates in run.pl where the actual algorithm has been implemented.
+
+How to run?
+Open as many terminal windows as required. In each window, run the following commands:
+
+swipl
+consult('/home/arya/Desktop/sem6/SSL/MidSem/flow.pl').
+setup(N, preference, processID).
+setupNext.
+
+Here N is the total number of processes, preference is the starting value with each process and processID is just to identify the process, it should be given from 1 to N.
+
+One important thing to be noted is that setupNext should be executed in order, that is, first on platform with processID as 1, then 2, then 3 and so on until N.
+
+Faults have been simulated in the coordinator in certain rounds, this has been hardcoded right now. It needs to be changed in line 243 in run.pl.
+This fault simply makes the coordinator stop working in a particular round (right now, round 1).
