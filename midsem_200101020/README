@@ -22,6 +22,8 @@ This algorithm has been implemented in prolog on Tartarus.
 There are two main files, flow.pl and run.pl.
 Flow.pl has the main predicates which calls predicates in run.pl where the actual algorithm has been implemented.
 
+The algorithm calls for a process to wait until it receives a message or acknowledgement or else timeout. This has been implemented using the sleep command. I have chosen approximate values for sleep and timeout. 
+
 How to run?
 Open as many terminal windows as required. In each window, run the following commands:
 

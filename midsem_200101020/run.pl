@@ -1,3 +1,5 @@
+% DECLARATIONS OF DIFFERENT PREDICATES
+
 :- dynamic pID/1.   
 :- dynamic preference/1.
 :- dynamic round/1.
@@ -46,7 +48,8 @@
 
 % ---------------------------------------------------------------------------------------------------
 
-% THIS IS THE INITIALISATION FUNCTION, WHICH INSTANTIATES CERTAIN VALUES OF THE PLATFORM
+% THIS IS THE INITIALISATION PREDICATE, WHICH INSTANTIATES CERTAIN VALUES OF THE PLATFORM
+% The main things any process has are preference, processID and timestamp. All other things are just for implementation of the algorithm.
 
 % input: preference, pid, number of processes. 
 % output: nothing
@@ -105,6 +108,8 @@ roundInitialiser :-
     retract(receivedDecidePref(_)),
     assertz(receivedDecidePref(0)),
 
+    % receivedNextBroadcast is a predicate which is used in synchronization of the rounds.
+
     receivedNextBroadcast(Nb),
     (Nb =:= 1 ->
     retract(receivedNextBroadcast(_)),
@@ -113,9 +118,6 @@ roundInitialiser :-
     assertz(receivedBroadcast(1));
     true
     ),
-
-
-    % create_mutex(mutexForCount),
 
     writeln("round is "),
     writeln(Y),
@@ -145,10 +147,16 @@ roundWork :-
     writeln(P),
     writeln("coordinator"),
     writeln(C2),*/
+
+    % sending initial message of preference to coordinator
+
     sendMessage(C2,R,X,T,P),
 
     (P =\= C2 -> 
     % intitial value of Timeout is False,
+
+    % waiting for broadcast message and sending ACK or NACK appropriately
+
     sleep(10),
     receivedBroadcast(B),
     (B =:= 1 ->
@@ -164,6 +172,7 @@ roundWork :-
 
     (P =\= C2 -> 
     % intitial value of Timeout is False,
+    % waiting to receive deicde preference value, if received, broadcasting and terminating or else entering next round.
     sleep(20),
     receivedDecidePref(Dp),
     preference(Pfinal),
@@ -173,7 +182,7 @@ roundWork :-
     broadcastDecidePref(R,Pfinal,N,P),
     writeln("Final broadcast of round done"),
     writeln("Final preference found"),
-    writeln("Round done");
+    writeln("Done");
     % it has not received decide preference
     writeln("no decide preference received"),
     writeln("Continuing to next round"),
@@ -183,11 +192,9 @@ roundWork :-
     ),
     writeln("Round done").
 
-
-
 % ----------------------------------------------------------------------------------------------------
 
-% THESE FUNCTIONS BELOW HANDLE THE SENDING OF THE INITIAL MESSAGE TO THE COORDINATOR FROM EVERY PROCESS.
+% THESE PREDICATES BELOW HANDLE THE SENDING OF THE INITIAL MESSAGE TO THE COORDINATOR FROM EVERY PROCESS.
 
 % input : 
 % output:
@@ -195,6 +202,8 @@ roundWork :-
 agentM_handler(guid,(IP,Port),main):-
     payloadToC(guid,X1,Y,Z,PO),
     handlerFunction(X1,Y,Z,PO).
+
+% This handler function gets executed when message with preference and timestamp goes to coordinator.
 
 handlerFunction(X1,Y,Z,PO):-
     countMessage(M),
@@ -210,6 +219,9 @@ handlerFunction(X1,Y,Z,PO):-
     preference(Xe),
     % writeln("current preference is "),
     % writeln(Xe),
+
+    % deciding new preference on the basis of timestamp values
+
     (Z > Tnew -> 
     retract(rNew(_)),
     assertz(rNew(X1)),
@@ -231,6 +243,9 @@ handlerFunction(X1,Y,Z,PO):-
     K1 is N - R +1,
     K is K1/2,
     % now if V is more than N/2 call another function to continue execution, or dont do anything.
+
+    % broadcasting decided preference after N/2 preference values have reached the coordinator.
+
     (V > K ->
     xNew(X11),
     retract(preference(_)),
@@ -246,6 +261,8 @@ handlerFunction(X1,Y,Z,PO):-
     );
     true
     ).
+
+% Sending message to coordinator
 
 % input :
 % output: 
@@ -269,7 +286,7 @@ sendMessage(C,R,X,T,P) :-
 
 % -----------------------------------------------------------------------------------------------------
 
-% THESE FUNCTIONS BELOW ARE TO SEND THE BROADCAST FROM THE COORDINATOR TO ALL THE PROCESSES
+% THESE PREDICATES BELOW ARE TO SEND THE BROADCAST FROM THE COORDINATOR TO ALL THE PROCESSES
 
 
 % input :
@@ -320,6 +337,8 @@ loop(I,N,R,X,P):-
     Ii is I+1,
     loop(Ii,N,R,X,P).
 
+% Broadcasting message to all processes
+
 % input :
 % output: 
 % description: sends a message with r and preference to all processes using mobile agent and payloads.
@@ -335,7 +354,7 @@ broadcastMessage(R,X,N,P) :-
 
 % -------------------------------------------------------------------------------------------------------
 
-% THESE FUNCTIONS BELOW ARE USED TO SEND THE ACKS FROM DIFFERENT PROCESSES TO THE COORDINATOR
+% THESE PREDICATES BELOW ARE USED TO SEND THE ACKS FROM DIFFERENT PROCESSES TO THE COORDINATOR
 
 % input :
 % output: 
@@ -381,7 +400,7 @@ sendAck(P,C) :-
 
 % -----------------------------------------------------------------------------------------------------------------
 
-% THESE FUNCTIONS BELOW ARE USED TO SEND NACKS FROM DIFFERENT PROCESSES TO THE COORDINATOR
+% THESE PREDICATES BELOW ARE USED TO SEND NACKS FROM DIFFERENT PROCESSES TO THE COORDINATOR
 
 
 % input :
@@ -409,7 +428,7 @@ sendNAck(P,C) :-
 
 % -------------------------------------------------------------------------------------------------
 
-% THESE FUNCTIONS BELOW ARE USED TO BROADCAST DECIDE PREFERENCE DIFFERENT PROCESSES BY THE COORDINATOR
+% THESE PREDICATES BELOW ARE USED TO BROADCAST DECIDE PREFERENCE DIFFERENT PROCESSES BY THE COORDINATOR
 
 % input :
 % output: 
